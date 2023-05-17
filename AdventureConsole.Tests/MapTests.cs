@@ -1,21 +1,45 @@
 using System.Diagnostics;
 using System.Numerics;
 using AdventureConsole;
+using NuGet.Frameworks;
+
 namespace AdventureConsole.Tests;
 
+[TestFixture]
 public class MapTests
 {
     [SetUp]
     public void Setup()
     {
-        MapGenerator.NumberOfRoomsToGenerate = 1000;
-        MapGenerator.GenerateMap();
+        
     }
 
     [Test]
-    [Retry(100)]
-    public void CheckValidRoomDoorsTest()
+    [TestCase(10)]
+    [TestCase(20)]
+    [TestCase(50)]
+    [TestCase(100)]
+    [TestCase(500)]
+    [TestCase(1000)]    
+    public void CheckRoomAmountGenerated(int numberOfRoomsToGenerate)
     {
+        MapGenerator.NumberOfRoomsToGenerate = numberOfRoomsToGenerate;
+        MapGenerator.GenerateMap();
+        Assert.That(Map.Rooms.Count, Is.EqualTo(numberOfRoomsToGenerate));
+    }
+
+    [Test]
+    [TestCase(10)]
+    [TestCase(20)]
+    [TestCase(50)]
+    [TestCase(100)]
+    [TestCase(500)]
+    [TestCase(1000)]
+    public void CheckValidRoomDoorsTest(int numberOfRoomsToGenerate)
+    {
+        MapGenerator.NumberOfRoomsToGenerate = numberOfRoomsToGenerate;
+        MapGenerator.GenerateMap();
+        
         for (int i = 0; i < Map.Rooms.Count; i++)
         {
             var room = Map.Rooms[i];

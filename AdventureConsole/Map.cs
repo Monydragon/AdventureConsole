@@ -45,9 +45,21 @@ public static class Map
         return room;
     }
     
-    public static Room RemoveRoom(string name, Vector2 pos)
+    public static Room RemoveRoom(string name)
     {
-        var room = Rooms.Find(x => x.Name.Equals(name, StringComparison.InvariantCultureIgnoreCase) || x.Position == pos);
+        var room = Rooms.Find(x => x.Name.Equals(name, StringComparison.InvariantCultureIgnoreCase));
+        if (room != null)
+        {
+            Rooms.Remove(room);
+            return room;
+        }
+
+        return room;
+    }
+
+    public static Room RemoveRoom(Vector2 pos)
+    {
+        var room = Rooms.Find(x => x.Position == pos);
         if (room != null)
         {
             Rooms.Remove(room);
