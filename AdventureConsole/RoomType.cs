@@ -3,6 +3,7 @@
 [System.Flags]
 public enum RoomType
 {
+    Invalid = -1,
     Default = 0,
     NorthExit = 1,
     EastExit = 2,

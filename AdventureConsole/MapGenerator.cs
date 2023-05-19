@@ -8,128 +8,222 @@ public static class MapGenerator
     public static Queue<Action> RoomGenerationQueue = new();
     private static HashSet<Vector2> GeneratingPositionsSet = new();
 
-    private static Room GenerateRoom(Vector2 pos, RoomType type)
+    public static Room GenerateRoom(Vector2 pos, RoomType type, RoomType outputRoomType = RoomType.Invalid)
     {
-        if (NumberOfRoomsToGenerate <= 0)
-        {
-            if (type.HasFlag(RoomType.NorthExit))
-            {
-                var northRoom = Map.GetRoom(pos + Vector2.UnitY);
-                if (northRoom.Type.HasFlag(RoomType.SouthExit))
-                {
-                    northRoom.Type -= RoomType.SouthExit;
-                }
-            }
-            if (type.HasFlag(RoomType.EastExit))
-            {
-                var eastRoom = Map.GetRoom(pos + Vector2.UnitX);
-                if (eastRoom.Type.HasFlag(RoomType.WestExit))
-                {
-                    eastRoom.Type -= RoomType.WestExit;
-                }
-            }
-            if (type.HasFlag(RoomType.SouthExit))
-            {
-                var southRoom = Map.GetRoom(pos - Vector2.UnitY);
-                if (southRoom.Type.HasFlag(RoomType.NorthExit))
-                {
-                    southRoom.Type -= RoomType.SouthExit;
-                }
-            }
-            if (type.HasFlag(RoomType.WestExit))
-            {
-                var westRoom = Map.GetRoom(pos - Vector2.UnitX);
-                if (westRoom.Type.HasFlag(RoomType.EastExit))
-                {
-                    westRoom.Type -= RoomType.EastExit;
-                }
-            }
-
-            return null!;
-        }
-        GeneratingPositionsSet.Remove(pos);
+        Room? rm = null;
         var rnd = new Random();
         var roomTypeVal = (RoomType)rnd.Next((int)RoomType.NorthExit, (int)RoomType.Open + 1);
         var roomName = $"Room {Map.Rooms.Count + 1}";
-        if(roomTypeVal.HasFlag(RoomType.NorthExit))
+
+        if (outputRoomType != RoomType.Invalid)
         {
-            var newPos = new Vector2(pos.X, pos.Y + 1);
-            if (!Map.RoomExists(newPos) && !GeneratingPositionsSet.Contains(newPos))
+            roomTypeVal = outputRoomType;
+
+            if (!Map.RoomExists(pos))
             {
-                GeneratingPositionsSet.Add(newPos);
-                RoomGenerationQueue.Enqueue(()=>
+                var mainRoom = Map.AddRoom(roomName, pos, type);
+                NumberOfRoomsToGenerate--;
+            }
+
+            if(outputRoomType.HasFlag(RoomType.NorthExit))
+            {
+                var newPos = new Vector2(pos.X, pos.Y + 1);
+                if (GeneratingPositionsSet.Contains(pos))
                 {
-                    GenerateRoom(newPos, RoomType.SouthExit);
-                });
-            }
-            else
-            {
-                roomTypeVal -= RoomType.NorthExit;
-            }
-        }
-        if(roomTypeVal.HasFlag(RoomType.EastExit))
-        {
-            var newPos = new Vector2(pos.X + 1, pos.Y);
-            if (!Map.RoomExists(newPos) && !GeneratingPositionsSet.Contains(newPos))
-            {
-                GeneratingPositionsSet.Add(newPos);
-                RoomGenerationQueue.Enqueue(()=>
+                    GeneratingPositionsSet.Remove(pos);
+                }
+                if(!Map.RoomExists(newPos) && !GeneratingPositionsSet.Contains(newPos))
                 {
-                    GenerateRoom(newPos, RoomType.WestExit);
-                });
+                    GeneratingPositionsSet.Add(newPos);
+                    RoomGenerationQueue.Enqueue(() =>
+                    {
+                        var newRoomName = $"Room {Map.Rooms.Count + 1}";
+                        rm = Map.AddRoom(newRoomName, newPos, RoomType.SouthExit);
+                    });
+                }
             }
-            else
+            if (outputRoomType.HasFlag(RoomType.EastExit))
             {
-                roomTypeVal -= RoomType.EastExit;
-            }
-        }
-        if(roomTypeVal.HasFlag(RoomType.SouthExit))
-        {
-            var newPos = new Vector2(pos.X, pos.Y - 1);
-            if (!Map.RoomExists(newPos) && !GeneratingPositionsSet.Contains(newPos))
-            {
-                GeneratingPositionsSet.Add(newPos);
-                RoomGenerationQueue.Enqueue(()=>
+                var newPos = new Vector2(pos.X + 1, pos.Y);
+                if (GeneratingPositionsSet.Contains(pos))
                 {
-                    GenerateRoom(newPos, RoomType.NorthExit);
-                });
-            }
-            else
-            {
-                roomTypeVal -= RoomType.SouthExit;
-            }
-        }
-        if(roomTypeVal.HasFlag(RoomType.WestExit))
-        {
-            var newPos = new Vector2(pos.X - 1, pos.Y);
-            if (!Map.RoomExists(newPos) && !GeneratingPositionsSet.Contains(newPos))
-            {
-                GeneratingPositionsSet.Add(newPos);
-                RoomGenerationQueue.Enqueue(()=>
+                    GeneratingPositionsSet.Remove(pos);
+                }
+                if (!Map.RoomExists(newPos) && !GeneratingPositionsSet.Contains(newPos))
                 {
-                    GenerateRoom(newPos, RoomType.EastExit);
-                });
+                    GeneratingPositionsSet.Add(newPos);
+                    RoomGenerationQueue.Enqueue(() =>
+                    {
+                        var newRoomName = $"Room {Map.Rooms.Count + 1}";
+                        rm = Map.AddRoom(newRoomName, newPos, RoomType.WestExit);
+                    });
+                }
             }
-            else
+            if (outputRoomType.HasFlag(RoomType.SouthExit))
             {
-                roomTypeVal -= RoomType.WestExit;
+                var newPos = new Vector2(pos.X, pos.Y - 1);
+                if (GeneratingPositionsSet.Contains(pos))
+                {
+                    GeneratingPositionsSet.Remove(pos);
+                }
+                if (!Map.RoomExists(newPos) && !GeneratingPositionsSet.Contains(newPos))
+                {
+                    GeneratingPositionsSet.Add(newPos);
+                    RoomGenerationQueue.Enqueue(() =>
+                    {
+                        var newRoomName = $"Room {Map.Rooms.Count + 1}";
+                        rm = Map.AddRoom(newRoomName, newPos, RoomType.NorthExit);
+                    });
+                }
             }
+            if (outputRoomType.HasFlag(RoomType.WestExit))
+            {
+                var newPos = new Vector2(pos.X -1, pos.Y);
+                if (GeneratingPositionsSet.Contains(pos))
+                {
+                    GeneratingPositionsSet.Remove(pos);
+                }
+                if (!Map.RoomExists(newPos) && !GeneratingPositionsSet.Contains(newPos))
+                {
+                    GeneratingPositionsSet.Add(newPos);
+                    RoomGenerationQueue.Enqueue(() =>
+                    {
+                        var newRoomName = $"Room {Map.Rooms.Count + 1}";
+                        rm = Map.AddRoom(newRoomName, newPos, RoomType.EastExit);
+                    });
+                }
+            }
+            NumberOfRoomsToGenerate--;
         }
-        roomTypeVal |= type;
-        var rm = Map.AddRoom(roomName, pos, roomTypeVal);
-        if (rm.Name.Equals(roomName, StringComparison.InvariantCultureIgnoreCase))
+        else
         {
+            if (NumberOfRoomsToGenerate <= 0)
+            {
+                if (type.HasFlag(RoomType.NorthExit))
+                {
+                    var northRoom = Map.GetRoom(pos + Vector2.UnitY);
+                    if (northRoom.Type.HasFlag(RoomType.SouthExit))
+                    {
+                        northRoom.Type -= RoomType.SouthExit;
+                    }
+                }
+                if (type.HasFlag(RoomType.EastExit))
+                {
+                    var eastRoom = Map.GetRoom(pos + Vector2.UnitX);
+                    if (eastRoom.Type.HasFlag(RoomType.WestExit))
+                    {
+                        eastRoom.Type -= RoomType.WestExit;
+                    }
+                }
+                if (type.HasFlag(RoomType.SouthExit))
+                {
+                    var southRoom = Map.GetRoom(pos - Vector2.UnitY);
+                    if (southRoom.Type.HasFlag(RoomType.NorthExit))
+                    {
+                        southRoom.Type -= RoomType.SouthExit;
+                    }
+                }
+                if (type.HasFlag(RoomType.WestExit))
+                {
+                    var westRoom = Map.GetRoom(pos - Vector2.UnitX);
+                    if (westRoom.Type.HasFlag(RoomType.EastExit))
+                    {
+                        westRoom.Type -= RoomType.EastExit;
+                    }
+                }
+
+                return null!;
+            }
+            GeneratingPositionsSet.Remove(pos);
+
+            if (roomTypeVal.HasFlag(RoomType.NorthExit))
+            {
+                var newPos = new Vector2(pos.X, pos.Y + 1);
+                if (!Map.RoomExists(newPos) && !GeneratingPositionsSet.Contains(newPos))
+                {
+                    GeneratingPositionsSet.Add(newPos);
+                    RoomGenerationQueue.Enqueue(() =>
+                    {
+                        GenerateRoom(newPos, RoomType.SouthExit);
+                    });
+                }
+                else
+                {
+                    roomTypeVal -= RoomType.NorthExit;
+                }
+            }
+            if (roomTypeVal.HasFlag(RoomType.EastExit))
+            {
+                var newPos = new Vector2(pos.X + 1, pos.Y);
+                if (!Map.RoomExists(newPos) && !GeneratingPositionsSet.Contains(newPos))
+                {
+                    GeneratingPositionsSet.Add(newPos);
+                    RoomGenerationQueue.Enqueue(() =>
+                    {
+                        GenerateRoom(newPos, RoomType.WestExit);
+                    });
+                }
+                else
+                {
+                    roomTypeVal -= RoomType.EastExit;
+                }
+            }
+            if (roomTypeVal.HasFlag(RoomType.SouthExit))
+            {
+                var newPos = new Vector2(pos.X, pos.Y - 1);
+                if (!Map.RoomExists(newPos) && !GeneratingPositionsSet.Contains(newPos))
+                {
+                    GeneratingPositionsSet.Add(newPos);
+                    RoomGenerationQueue.Enqueue(() =>
+                    {
+                        GenerateRoom(newPos, RoomType.NorthExit);
+                    });
+                }
+                else
+                {
+                    roomTypeVal -= RoomType.SouthExit;
+                }
+            }
+            if (roomTypeVal.HasFlag(RoomType.WestExit))
+            {
+                var newPos = new Vector2(pos.X - 1, pos.Y);
+                if (!Map.RoomExists(newPos) && !GeneratingPositionsSet.Contains(newPos))
+                {
+                    GeneratingPositionsSet.Add(newPos);
+                    RoomGenerationQueue.Enqueue(() =>
+                    {
+                        GenerateRoom(newPos, RoomType.EastExit);
+                    });
+                }
+                else
+                {
+                    roomTypeVal -= RoomType.WestExit;
+                }
+            }
+            roomTypeVal |= type;
+            rm = Map.AddRoom(roomName, pos, roomTypeVal);
             NumberOfRoomsToGenerate--;
         }
         return rm;
+
     }
 
-    public static bool GenerateMap()
+    public static bool GenerateMap(RoomType defaultInputRoomType = RoomType.Open, RoomType defualtOutputRoomType = RoomType.Invalid)
     {
-        RoomGenerationQueue.Enqueue(()=>
+        if(defualtOutputRoomType != RoomType.Invalid)
         {
-            GenerateRoom(Vector2.Zero, RoomType.Default);
-        });
+            RoomGenerationQueue.Enqueue(() =>
+            {
+                GenerateRoom(Vector2.Zero, defaultInputRoomType, defualtOutputRoomType);
+            });
+        }
+        else
+        {
+            RoomGenerationQueue.Enqueue(() =>
+            {
+                GenerateRoom(Vector2.Zero, RoomType.Default);
+            });
+        }
 
         while (RoomGenerationQueue?.Count > 0 || NumberOfRoomsToGenerate > 0)
         {
